@@ -1,5 +1,11 @@
+import Register from "./Register";
+
 function App() {
-  return <div>hello</div>;
+  return (
+    <div>
+      <Register />
+    </div>
+  );
 }
 
 export default App;
