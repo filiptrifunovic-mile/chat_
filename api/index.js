@@ -115,6 +115,11 @@ wss.on("connection", (connection, req) => {
     }
   }
 
+  connection.on("message", (message) => {
+    message = JSON.parse(message.toString());
+    console.log(message);
+  });
+
   [...wss.clients].forEach((client) => {
     client.send(
       JSON.stringify({
