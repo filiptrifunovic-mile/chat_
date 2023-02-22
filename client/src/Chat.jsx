@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import Avatar from "./Avatar";
 import Logo from "./Logo";
 import { UserContext } from "./UserContext";
+import { uniqBy } from "lodash";
 
 const Chat = () => {
   const [ws, setWs] = useState(null);
@@ -33,20 +34,14 @@ const Chat = () => {
 
     if ("online" in messageData) {
       showOnlinePeople(messageData.online);
-    } else {
-      setMessages((prev) => [
-        ...prev,
-        { isOur: false, text: messageData.text },
-      ]);
+    } else if ("text" in messageData) {
+      setMessages((prev) => [...prev, { ...messageData }]);
     }
   }
 
   function selectContact(userId) {
     setSelectedUserId(userId);
   }
-
-  const onlinePeopleExcludingOurUser = { ...onlinePeople };
-  delete onlinePeopleExcludingOurUser[id];
 
   function sendMessage(e) {
     e.preventDefault();
@@ -58,8 +53,21 @@ const Chat = () => {
       })
     );
     setNewMessageText("");
-    setMessages((prev) => [...prev, { text: newMessageText, isOur: true }]);
+    setMessages((prev) => [
+      ...prev,
+      {
+        text: newMessageText,
+        sender: id,
+        recipient: selectedUserId,
+        id: Date.now(),
+      },
+    ]);
   }
+
+  const onlinePeopleExcludingOurUser = { ...onlinePeople };
+  delete onlinePeopleExcludingOurUser[id];
+
+  const messageWithoutDupes = uniqBy(messages, "id");
 
   return (
     <div className="flex h-screen">
@@ -93,9 +101,26 @@ const Chat = () => {
             </div>
           )}
           {!!selectedUserId && (
-            <div>
-              {messages.map((message, index) => (
-                <div key={index}>{message.text}</div>
+            <div className="overflow-y-scroll">
+              {messageWithoutDupes.map((message, index) => (
+                <div
+                  className={`${
+                    message.sender === id ? "text-right" : "text-left"
+                  }`}
+                >
+                  <div
+                    key={index}
+                    className={`${
+                      message.sender === id
+                        ? "bg-blue-500 text-white"
+                        : "bg-white text-gray-500"
+                    } p-2 my-2 rounded-lg text-sm inline-block text-left`}
+                  >
+                    sender:{message.sender} <br />
+                    my id: {id} <br />
+                    {message.text}
+                  </div>
+                </div>
               ))}
             </div>
           )}
