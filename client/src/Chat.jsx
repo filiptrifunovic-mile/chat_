@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Avatar from "./Avatar";
 
 const Chat = () => {
   const [ws, setWs] = useState(null);
@@ -45,8 +46,12 @@ const Chat = () => {
           Chat app
         </div>
         {Object.keys(onlinePeople).map((userId, index) => (
-          <div key={index} className="border-b border-gray-100 py-2">
-            {onlinePeople[userId]}
+          <div
+            key={index}
+            className="border-b border-gray-100 py-2 flex items-center gap-2"
+          >
+            <Avatar username={onlinePeople[userId]} userId={userId} />
+            <span>{onlinePeople[userId]}</span>
           </div>
         ))}
       </div>
