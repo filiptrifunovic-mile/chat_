@@ -8,6 +8,7 @@ const Chat = () => {
   const [onlinePeople, setOnlinePeople] = useState({});
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [newMessageText, setNewMessageText] = useState("");
+  const [messages, setMessages] = useState([]);
 
   const { username, id } = useContext(UserContext);
 
@@ -28,8 +29,15 @@ const Chat = () => {
   function handleMessage(e) {
     const messageData = JSON.parse(e.data);
 
+    console.log({ e, messageData });
+
     if ("online" in messageData) {
       showOnlinePeople(messageData.online);
+    } else {
+      setMessages((prev) => [
+        ...prev,
+        { isOur: false, text: messageData.text },
+      ]);
     }
   }
 
@@ -45,12 +53,12 @@ const Chat = () => {
 
     ws.send(
       JSON.stringify({
-        message: {
-          recipient: selectedUserId,
-          text: newMessageText,
-        },
+        recipient: selectedUserId,
+        text: newMessageText,
       })
     );
+    setNewMessageText("");
+    setMessages((prev) => [...prev, { text: newMessageText, isOur: true }]);
   }
 
   return (
@@ -82,6 +90,13 @@ const Chat = () => {
               <div className="text-gray-300">
                 &larr; Select person from the list
               </div>
+            </div>
+          )}
+          {!!selectedUserId && (
+            <div>
+              {messages.map((message, index) => (
+                <div key={index}>{message.text}</div>
+              ))}
             </div>
           )}
         </div>
