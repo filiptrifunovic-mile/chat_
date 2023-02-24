@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import Avatar from "./Avatar";
 import Logo from "./Logo";
 import { UserContext } from "./UserContext";
@@ -10,6 +10,8 @@ const Chat = () => {
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [newMessageText, setNewMessageText] = useState("");
   const [messages, setMessages] = useState([]);
+
+  const ref = useRef();
 
   const { username, id } = useContext(UserContext);
 
@@ -64,6 +66,14 @@ const Chat = () => {
     ]);
   }
 
+  useEffect(() => {
+    const div = ref.current;
+
+    if (div) {
+      div.scrollIntoView({ behaviour: "smooth", block: "end" });
+    }
+  }, [messages]);
+
   const onlinePeopleExcludingOurUser = { ...onlinePeople };
   delete onlinePeopleExcludingOurUser[id];
 
@@ -101,27 +111,30 @@ const Chat = () => {
             </div>
           )}
           {!!selectedUserId && (
-            <div className="overflow-y-scroll">
-              {messageWithoutDupes.map((message, index) => (
-                <div
-                  className={`${
-                    message.sender === id ? "text-right" : "text-left"
-                  }`}
-                >
+            <div className="relative h-full">
+              <div className="overflow-y-scroll absolute inset-0">
+                {messageWithoutDupes.map((message, index) => (
                   <div
-                    key={index}
                     className={`${
-                      message.sender === id
-                        ? "bg-blue-500 text-white"
-                        : "bg-white text-gray-500"
-                    } p-2 my-2 rounded-lg text-sm inline-block text-left`}
+                      message.sender === id ? "text-right" : "text-left"
+                    }`}
                   >
-                    sender:{message.sender} <br />
-                    my id: {id} <br />
-                    {message.text}
+                    <div
+                      key={index}
+                      className={`${
+                        message.sender === id
+                          ? "bg-blue-500 text-white"
+                          : "bg-white text-gray-500"
+                      } p-2 my-2 rounded-lg text-sm inline-block text-left`}
+                    >
+                      sender:{message.sender} <br />
+                      my id: {id} <br />
+                      {message.text}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+                <div ref={ref}></div>
+              </div>
             </div>
           )}
         </div>
