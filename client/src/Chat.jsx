@@ -17,10 +17,19 @@ const Chat = () => {
   const { username, id } = useContext(UserContext);
 
   useEffect(() => {
+    connectToWs();
+  }, []);
+
+  function connectToWs() {
     const ws = new WebSocket("ws://localhost:4000");
     setWs(ws);
     ws.addEventListener("message", handleMessage);
-  }, []);
+    ws.addEventListener("close", () => {
+      setTimeout(() => {
+        connectToWs();
+      }, 1000);
+    });
+  }
 
   function showOnlinePeople(peopleArr) {
     const people = {};
@@ -62,7 +71,7 @@ const Chat = () => {
         text: newMessageText,
         sender: id,
         recipient: selectedUserId,
-        id: Date.now(),
+        _id: Date.now(),
       },
     ]);
   }
@@ -77,14 +86,16 @@ const Chat = () => {
 
   useEffect(() => {
     if (selectedUserId) {
-      axios.get(`/messages/${selectedUserId}`);
+      axios.get(`/messages/${selectedUserId}`).then((res) => {
+        setMessages(res.data);
+      });
     }
   }, [selectedUserId]);
 
   const onlinePeopleExcludingOurUser = { ...onlinePeople };
   delete onlinePeopleExcludingOurUser[id];
 
-  const messageWithoutDupes = uniqBy(messages, "id");
+  const messageWithoutDupes = uniqBy(messages, "_id");
 
   return (
     <div className="flex h-screen">
@@ -127,15 +138,13 @@ const Chat = () => {
                     }`}
                   >
                     <div
-                      key={index}
+                      key={message._id}
                       className={`${
                         message.sender === id
                           ? "bg-blue-500 text-white"
                           : "bg-white text-gray-500"
                       } p-2 my-2 rounded-lg text-sm inline-block text-left`}
                     >
-                      sender:{message.sender} <br />
-                      my id: {id} <br />
                       {message.text}
                     </div>
                   </div>
