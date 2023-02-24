@@ -129,6 +129,34 @@ const server = app.listen(4000);
 const wss = new ws.WebSocketServer({ server });
 
 wss.on("connection", (connection, req) => {
+  function notifyAboutOnlinePeople() {
+    [...wss.clients].forEach((client) => {
+      client.send(
+        JSON.stringify({
+          online: [...wss.clients].map((c) => ({
+            userId: c.userId,
+            username: c.username,
+          })),
+        })
+      );
+    });
+  }
+
+  connection.isAlive = true;
+
+  connection.timer = setInterval(() => {
+    connection.ping();
+    connection.deathTimer = setTimeout(() => {
+      connection.isAlive = false;
+      connection.terminate();
+      notifyAboutOnlinePeople();
+    }, 1000);
+  }, 5000);
+
+  connection.on("pong", () => {
+    clearTimeout(connection.deathTimer);
+  });
+
   const cookies = req.headers.cookie;
   if (cookies) {
     const tokenCookieString = cookies
@@ -175,14 +203,5 @@ wss.on("connection", (connection, req) => {
     }
   });
 
-  [...wss.clients].forEach((client) => {
-    client.send(
-      JSON.stringify({
-        online: [...wss.clients].map((c) => ({
-          userId: c.userId,
-          username: c.username,
-        })),
-      })
-    );
-  });
+  notifyAboutOnlinePeople();
 });
