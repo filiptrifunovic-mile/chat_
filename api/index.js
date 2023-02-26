@@ -8,6 +8,7 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const bcrypt = require("bcryptjs");
 const ws = require("ws");
+const fs = require("fs");
 
 dotenv.config();
 mongoose.connect(process.env.MONGO_URL, (err) => {
@@ -18,6 +19,7 @@ const bcryptSalt = bcrypt.genSaltSync(10);
 
 const app = express();
 app.use(express.json());
+app.use("/uploads", express.static(__dirname + "/uploads"));
 app.use(cookieParser());
 app.use(
   cors({
@@ -152,6 +154,7 @@ wss.on("connection", (connection, req) => {
     connection.ping();
     connection.deathTimer = setTimeout(() => {
       connection.isAlive = false;
+      clearInterval(connection.timer);
       connection.terminate();
       notifyAboutOnlinePeople();
     }, 1000);
@@ -183,13 +186,27 @@ wss.on("connection", (connection, req) => {
   connection.on("message", async (message) => {
     const messageData = (message = JSON.parse(message.toString()));
 
-    const { recipient, text } = messageData;
+    const { recipient, text, file } = messageData;
 
-    if (recipient && text) {
+    let filename = null;
+
+    if (file) {
+      const parts = file.name.split(".");
+      const extension = parts[parts.length - 1];
+      filename = Date.now() + "." + extension;
+      const path = __dirname + "/uploads/" + filename;
+      const bufferData = new Buffer(file.data.split(",")[1], "base64");
+      fs.writeFile(path, bufferData, () => {
+        console.log("file saved: " + path);
+      });
+    }
+
+    if (recipient && (text || file)) {
       const messageDoc = await Message.create({
         sender: connection.userId,
         recipient,
         text,
+        file: file ? filename : null,
       });
 
       [...wss.clients]
@@ -200,6 +217,7 @@ wss.on("connection", (connection, req) => {
               text,
               sender: connection.userId,
               recipient,
+              file: file ? filename : null,
               _id: messageDoc._id,
             })
           )

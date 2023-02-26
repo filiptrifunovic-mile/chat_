@@ -47,29 +47,50 @@ const Chat = () => {
     if ("online" in messageData) {
       showOnlinePeople(messageData.online);
     } else if ("text" in messageData) {
-      setMessages((prev) => [...prev, { ...messageData }]);
+      if (messageData.sender === selectedUserId) {
+        setMessages((prev) => [...prev, { ...messageData }]);
+      }
     }
   }
 
-  function sendMessage(e) {
-    e.preventDefault();
+  function sendMessage(e, file = null) {
+    if (e) e.preventDefault();
 
     ws.send(
       JSON.stringify({
         recipient: selectedUserId,
         text: newMessageText,
+        file,
       })
     );
-    setNewMessageText("");
-    setMessages((prev) => [
-      ...prev,
-      {
-        text: newMessageText,
-        sender: id,
-        recipient: selectedUserId,
-        _id: Date.now(),
-      },
-    ]);
+
+    if (file) {
+      axios.get(`/messages/${selectedUserId}`).then((res) => {
+        setMessages(res.data);
+      });
+    } else {
+      setNewMessageText("");
+      setMessages((prev) => [
+        ...prev,
+        {
+          text: newMessageText,
+          sender: id,
+          recipient: selectedUserId,
+          _id: Date.now(),
+        },
+      ]);
+    }
+  }
+
+  function sendFile(e) {
+    const reader = new FileReader();
+    reader.readAsDataURL(e.target?.files?.[0]);
+    reader.onload = () => {
+      sendMessage(null, {
+        name: e.target?.files?.[0].name,
+        data: reader.result,
+      });
+    };
   }
 
   useEffect(() => {
@@ -108,6 +129,7 @@ const Chat = () => {
 
   function logout() {
     axios.post("/logout").then(() => {
+      setWs(null);
       setId(null);
       setLoggedInUsername(null);
     });
@@ -191,6 +213,35 @@ const Chat = () => {
                       } p-2 my-2 rounded-lg text-sm inline-block text-left`}
                     >
                       {message.text}
+                      {message.file && (
+                        <div className="flex items-center gap-1">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={1.5}
+                            stroke="currentColor"
+                            className="w-4 h-4"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13"
+                            />
+                          </svg>
+                          <a
+                            target="_blank"
+                            className="underline"
+                            href={
+                              axios.defaults.baseURL +
+                              "/uploads/" +
+                              message.file
+                            }
+                          >
+                            {message.file}
+                          </a>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -208,6 +259,26 @@ const Chat = () => {
               className="bg-white border p-2 flex-grow rounded-sm"
               placeholder="type your message here"
             />
+            <label
+              type="button"
+              className="bg-gray-200 p-2 text-gray-600 rounded-sm border cursor-pointer border-gray-300"
+            >
+              <input type="file" className="hidden" onChange={sendFile} />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-6 h-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13"
+                />
+              </svg>
+            </label>
             <button
               type="submit"
               className="bg-blue-500 p-2 text-white rounded-sm"
