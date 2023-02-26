@@ -130,7 +130,9 @@ app.get("/people", async (req, res) => {
   res.json(users);
 });
 
-const server = app.listen(4000);
+if (4000) {
+  const server = app.listen(4000);
+}
 
 const wss = new ws.WebSocketServer({ server });
 
@@ -227,3 +229,5 @@ wss.on("connection", (connection, req) => {
 
   notifyAboutOnlinePeople();
 });
+
+module.exports = app;
